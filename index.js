@@ -3,12 +3,26 @@
 var fs = require('fs');
 var path = require('path');
 var glob = require('matched');
-var gray = require('ansi-gray');
-var cyan = require('ansi-cyan');
-var dir = require('resolve-dir');
 var isAbsolute = require('is-absolute');
 var extend = require('extend-shallow');
 var text = require('text-table');
+var dir = require('resolve-dir');
+
+/**
+ * Get the size of all files that match the given glob `patterns`.
+ *
+ * ```js
+ * // get the size of all files in the cwd
+ * size('*', function(err, stats) {
+ *   console.log(stats);
+ * });
+ * ```
+ * @param {String|Array} `patterns`
+ * @param {Object} `options`
+ * @param {Function} `cb`
+ * @return {Object}
+ * @api public
+ */
 
 module.exports = function(patterns, options, cb) {
   if (typeof options === 'function') {
@@ -17,7 +31,6 @@ module.exports = function(patterns, options, cb) {
   }
 
   var opts = extend({cwd: process.cwd(), nocase: true}, options);
-  var stats = {files: [], total: 0, count: 0};
 
   if (typeof patterns === 'string') {
     patterns = patterns.split(',');
@@ -32,39 +45,112 @@ module.exports = function(patterns, options, cb) {
       cb(err);
       return;
     }
-
-    for (var i = 0; i < files.length; i++) {
-      var file = files[i];
-      if (!isAbsolute(file)) {
-        file = path.join(opts.cwd, file);
-      }
-
-      var stat = fs.statSync(file);
-      stats.files.push({file: file, size: format(stat.size), bytes: stat.size});
-      stats.total += stat.size;
-      stats.count++;
-    }
-
-    stats.size = format(stats.total);
-    stats.top = top(stats);
-    stats.table = function(val) {
-      return tableize(val, opts.cwd);
-    };
-
-    cb(null, stats);
+    cb(null, toStats(files, opts));
   });
 };
+
+/**
+ * Synchronously get the size of all files that match the given glob `patterns`.
+ *
+ * ```js
+ * // get the size of all files in the cwd
+ * var stats = size.sync('*');
+ * console.log(stats);
+ * ```
+ * @param {String|Array} `patterns`
+ * @param {Object} `options`
+ * @return {Object}
+ * @api public
+ */
 
 module.exports.sync = function(patterns, options) {
   var opts = extend({cwd: process.cwd(), nocase: true}, options);
   var files = glob.sync(patterns, opts);
+  return toStats(files, opts);
+};
+
+/**
+ * Returns the top `n` files by size, sorted in ascending order.
+ *
+ * ```js
+ * size('node_modules/**', function(err, stats) {
+ *   console.log(stats.top(25));
+ * });
+ * ```
+ * @name .top
+ * @param {Number} `n` The number of files to return.
+ * @return {Array} Array of the top `n` files
+ * @api public
+ */
+
+function top(stats) {
+  return function(n) {
+    var files = stats.files.slice();
+
+    files.sort(function(a, b) {
+      return a.bytes < b.bytes ? 1 : (a.bytes > b.bytes ? -1 : 0);
+    });
+
+    if (typeof n !== 'number') {
+      return files;
+    }
+    return files.slice(0, n || 10);
+  };
+}
+
+/**
+ * Create a text table from the `stats.files` array returned
+ * by the main export, or from the [.top](#top) method.
+ *
+ * ```js
+ * // tableize the 3 largest files in "node_modules/**"
+ * size('node_modules/**', function(err, stats) {
+ *   console.log(stats.table(stats.top(50)));
+ * });
+ *
+ * // tableize all files
+ * size('node_modules/**', function(err, stats) {
+ *   console.log(stats.table(stats.files));
+ * });
+ * ```
+ * @name .tableize
+ * @param {Array} `files`
+ * @return {String}
+ * @api public
+ */
+
+function tableize(files, cwd) {
+  if (!Array.isArray(files)) {
+    throw new TypeError('expected an array of objects');
+  }
+
+  var table = [];
+  var total = {bytes: 0, files: files.length};
+
+  for (var i = 0; i < total.files; i++) {
+    var stat = files[i];
+    table.push([stat.size, path.relative(cwd, stat.file)]);
+    total.bytes += stat.bytes;
+  }
+
+  table.push([format(total.bytes), `(${total.files} files)`]);
+  return text(table, {align: ['r', 'l']});
+}
+
+/**
+ * Create the stats arrays
+ */
+
+function toStats(files, options) {
   var stats = {files: [], total: 0, count: 0};
-
   for (var i = 0; i < files.length; i++) {
-    var name = files[i];
-    var file = path.join(opts.cwd, name);
-    var stat = fs.statSync(file);
+    var file = files[i];
 
+    if (!isAbsolute(file)) {
+      file = path.join(options.cwd, file);
+    }
+
+    var stat = fs.statSync(file);
     stats.files.push({file: file, size: format(stat.size), bytes: stat.size});
     stats.total += stat.size;
     stats.count++;
@@ -73,11 +159,14 @@ module.exports.sync = function(patterns, options) {
   stats.size = format(stats.total);
   stats.top = top(stats);
   stats.table = function(val) {
-    return tableize(val);
+    return tableize(val, options.cwd);
   };
-
   return stats;
-};
+}
+
+/**
+ * Format sizes
+ */
 
 function format(number, precision) {
   if (typeof precision !== 'number') {
@@ -97,40 +186,5 @@ function format(number, precision) {
       break;
     }
   }
-
   return number;
-}
-
-function top(stats) {
-  return function(n) {
-    var files = stats.files.slice();
-
-    files.sort(function(a, b) {
-      return a.bytes < b.bytes ? 1 : (a.bytes > b.bytes ? -1 : 0);
-    });
-
-    if (typeof n !== 'number') {
-      return files;
-    }
-    return files.slice(0, n || 10);
-  };
-}
-
-function tableize(arr, cwd) {
-  if (!Array.isArray(arr)) {
-    throw new TypeError('expected an array of objects');
-  }
-
-  var table = [];
-  var total = {bytes: 0, files: 0};
-
-  for (var i = 0; i < arr.length; i++) {
-    var stat = arr[i];
-    table.push([stat.size, path.relative(cwd, stat.file)]);
-    total.bytes += stat.bytes;
-    total.files++;
-  }
-
-  table.push([format(total.bytes), `(${total.files} files)`]);
-  return text(table, {align: ['r', 'l']});
 }

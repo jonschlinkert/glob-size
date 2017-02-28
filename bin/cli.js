@@ -7,7 +7,7 @@ var argv = require('yargs')(process.argv.slice(2))
   .option('cwd', {
     alias: 'd',
     describe: 'directory to search from',
-    default: process.cwd()
+    default: '.'
   })
   .option('pattern', {
     alias: 'p',
@@ -21,6 +21,7 @@ var argv = require('yargs')(process.argv.slice(2))
     alias: 's',
     describe: 'log out the entire stats object with all files',
   })
+  .help()
   .argv;
 
 var pattern = argv.pattern || (argv._.length ? argv._ : null) || '*';
