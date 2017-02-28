@@ -1,0 +1,46 @@
+{
+  "name": "glob-size",
+  "description": "Get the total size of a glob of files.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/jonschlinkert/glob-size",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/glob-size",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/glob-size/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "bin",
+    "index.js"
+  ],
+  "main": "index.js",
+  "bin": {
+    "glob-size": "bin/cli.js",
+    "gs": "bin/cli.js"
+  },
+  "engines": {
+    "node": ">=4"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "ansi-cyan": "^0.1.1",
+    "ansi-gray": "^0.1.1",
+    "extend-shallow": "^2.0.1",
+    "is-absolute": "^0.2.6",
+    "log-ok": "^0.1.1",
+    "matched": "^0.4.4",
+    "resolve-dir": "^1.0.0",
+    "text-table": "^0.2.0",
+    "yargs": "^6.6.0"
+  },
+  "keywords": [
+    "file",
+    "file-size",
+    "glob",
+    "match",
+    "size",
+    "stat"
+  ]
+}
