@@ -71,13 +71,14 @@ module.exports.sync = function(patterns, options) {
 
 /**
  * Returns the top `n` files by size, sorted in ascending order.
+ * _(this method is exposed on the returned stats object)_
  *
  * ```js
  * size('node_modules/**', function(err, stats) {
  *   console.log(stats.top(25));
  * });
  * ```
- * @name .top
+ * @name .stats.top
  * @param {Number} `n` The number of files to return.
  * @return {Array} Array of the top `n` files
  * @api public
@@ -100,7 +101,8 @@ function top(stats) {
 
 /**
  * Create a text table from the `stats.files` array returned
- * by the main export, or from the [.top](#top) method.
+ * by the main export, or from the [.top](#top) method. _(this
+ * method is exposed on the returned stats object)_
  *
  * ```js
  * // tableize the 3 largest files in "node_modules/**"
@@ -113,7 +115,7 @@ function top(stats) {
  *   console.log(stats.table(stats.files));
  * });
  * ```
- * @name .tableize
+ * @name .stats.tableize
  * @param {Array} `files`
  * @return {String}
  * @api public

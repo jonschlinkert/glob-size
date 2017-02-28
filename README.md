@@ -68,9 +68,9 @@ var stats = size.sync('*');
 console.log(stats);
 ```
 
-### [.top](index.js#L86)
+### [.stats.top](index.js#L87)
 
-Returns the top `n` files by size, sorted in ascending order.
+Returns the top `n` files by size, sorted in ascending order. _(this method is exposed on the returned stats object)_
 
 **Params**
 
@@ -85,9 +85,9 @@ size('node_modules/**', function(err, stats) {
 });
 ```
 
-### [.tableize](index.js#L122)
+### [.stats.tableize](index.js#L124)
 
-Create a text table from the `stats.files` array returned by the main export, or from the [.top](#top) method.
+Create a text table from the `stats.files` array returned by the main export, or from the [.top](#top) method. _(this method is exposed on the returned stats object)_
 
 **Params**
 
