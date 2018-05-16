@@ -1,7 +1,7 @@
 {
   "name": "glob-size",
   "description": "Get the total size of a glob of files.",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "homepage": "https://github.com/jonschlinkert/glob-size",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/glob-size",
