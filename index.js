@@ -1,36 +1,30 @@
 'use strict';
 
-var fs = require('fs');
-var path = require('path');
-var glob = require('matched');
-var isAbsolute = require('is-absolute');
-var extend = require('extend-shallow');
-var text = require('text-table');
-var dir = require('resolve-dir');
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
+const glob = require('matched');
+const text = require('text-table');
+const dir = require('resolve-dir');
+const stats = util.promisify(fs.stat);
 
 /**
  * Get the size of all files that match the given glob `patterns`.
  *
  * ```js
  * // get the size of all files in the cwd
- * size('*', function(err, stats) {
- *   console.log(stats);
- * });
+ * size('*')
+ *   .then(console.log)
+ *   .catch(console.error)
  * ```
- * @param {String|Array} `patterns`
- * @param {Object} `options`
- * @param {Function} `cb`
- * @return {Object}
+ * @param {string|array} `patterns`
+ * @param {object} `options`
+ * @return {promise}
  * @api public
  */
 
-module.exports = function(patterns, options, cb) {
-  if (typeof options === 'function') {
-    cb = options;
-    options = {};
-  }
-
-  var opts = extend({cwd: process.cwd(), nocase: true}, options);
+module.exports = async(patterns, options) => {
+  const opts = Object.assign({ cwd: process.cwd(), nocase: true }, options);
 
   if (typeof patterns === 'string') {
     patterns = patterns.split(',');
@@ -40,21 +34,54 @@ module.exports = function(patterns, options, cb) {
     return path.resolve(opts.cwd, dir(pattern));
   });
 
-  glob(patterns, opts, function(err, files) {
-    if (err) {
-      cb(err);
-      return;
-    }
-    cb(null, toStats(files, opts));
-  });
+  return toStats(await lookup(patterns, opts), opts);
 };
+
+async function lookup(patterns, options = {}) {
+  const list = await glob(patterns, options);
+  const res = [];
+
+  async function recurse(files) {
+    for (const fp of files) {
+      if (/\.DS_Store|Thumbs\.db$/i.test(fp)) {
+        continue;
+      }
+
+      const stat = await stats(fp);
+      if (stat.isDirectory()) {
+        if (!shouldRecurse(patterns, fp, options)) {
+          continue;
+        }
+
+        const dirFiles = fs.readdirSync(fp).map(name => {
+          return path.join(fp, name);
+        });
+
+        await recurse(dirFiles);
+      } else {
+        res.push(fp);
+      }
+    }
+  }
+
+  await recurse(list);
+  return res;
+}
+
+function shouldRecurse(patterns, dirname, options) {
+  const hasPattern = [].concat(patterns).some(p => /node_modules$/.test(p));
+  if (/node_modules$/.test(dirname)) {
+    if (options.node_modules !== true && !hasPattern) return false;
+  }
+  return true;
+}
 
 /**
  * Synchronously get the size of all files that match the given glob `patterns`.
  *
  * ```js
  * // get the size of all files in the cwd
- * var stats = size.sync('*');
+ * const stats = size.sync('*');
  * console.log(stats);
  * ```
  * @param {String|Array} `patterns`
@@ -64,8 +91,8 @@ module.exports = function(patterns, options, cb) {
  */
 
 module.exports.sync = function(patterns, options) {
-  var opts = extend({cwd: process.cwd(), nocase: true}, options);
-  var files = glob.sync(patterns, opts);
+  const opts = Object.assign({cwd: process.cwd(), nocase: true}, options);
+  const files = glob.sync(patterns, opts);
   return toStats(files, opts);
 };
 
@@ -74,9 +101,9 @@ module.exports.sync = function(patterns, options) {
  * _(this method is exposed on the returned stats object)_
  *
  * ```js
- * size('node_modules/**', function(err, stats) {
- *   console.log(stats.top(25));
- * });
+ * size('node_modules/**')
+ *   .then(stats => console.log(stats.top(25)))
+ *   .catch(console.error);
  * ```
  * @name .stats.top
  * @param {Number} `n` The number of files to return.
@@ -86,7 +113,7 @@ module.exports.sync = function(patterns, options) {
 
 function top(stats) {
   return function(n) {
-    var files = stats.files.slice();
+    const files = stats.files.slice();
 
     files.sort(function(a, b) {
       return a.bytes < b.bytes ? 1 : (a.bytes > b.bytes ? -1 : 0);
@@ -106,14 +133,14 @@ function top(stats) {
  *
  * ```js
  * // tableize the 3 largest files in "node_modules/**"
- * size('node_modules/**', function(err, stats) {
- *   console.log(stats.table(stats.top(50)));
- * });
+ * size('node_modules/**')
+ *   .then(stats => console.log(stats.table(stats.top(3))))
+ *   .catch(console.error);
  *
  * // tableize all files
- * size('node_modules/**', function(err, stats) {
- *   console.log(stats.table(stats.files));
- * });
+ * size('node_modules/**')
+ *   .then(stats => console.log(stats.table(stats.files)))
+ *   .catch(console.error);
  * ```
  * @name .stats.tableize
  * @param {Array} `files`
@@ -126,11 +153,11 @@ function tableize(files, cwd) {
     throw new TypeError('expected an array of objects');
   }
 
-  var table = [];
-  var total = {bytes: 0, files: files.length};
+  const total = { bytes: 0, files: files.length };
+  const table = [];
 
-  for (var i = 0; i < total.files; i++) {
-    var stat = files[i];
+  for (let i = 0; i < total.files; i++) {
+    const stat = files[i];
     table.push([stat.size, path.relative(cwd, stat.file)]);
     total.bytes += stat.bytes;
   }
@@ -143,26 +170,24 @@ function tableize(files, cwd) {
  * Create the stats arrays
  */
 
-function toStats(files, options) {
-  var stats = {files: [], total: 0, count: 0};
-  for (var i = 0; i < files.length; i++) {
-    var file = files[i];
+function toStats(files, options = {}) {
+  const stats = { files: [], total: 0, count: 0 };
+  for (let i = 0; i < files.length; i++) {
+    let file = files[i];
 
-    if (!isAbsolute(file)) {
+    if (!path.isAbsolute(file)) {
       file = path.join(options.cwd, file);
     }
 
-    var stat = fs.statSync(file);
-    stats.files.push({file: file, size: format(stat.size), bytes: stat.size});
+    const stat = fs.statSync(file);
+    stats.files.push({ file, size: format(stat.size), bytes: stat.size });
     stats.total += stat.size;
     stats.count++;
   }
 
+  stats.table = val => tableize(val, options.cwd);
   stats.size = format(stats.total);
   stats.top = top(stats);
-  stats.table = function(val) {
-    return tableize(val, options.cwd);
-  };
   return stats;
 }
 
@@ -175,13 +200,13 @@ function format(number, precision) {
     precision = 2;
   }
 
-  var abbr = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const abbr = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
   precision = Math.pow(10, precision);
   number = Number(number);
 
-  var len = abbr.length - 1;
+  let len = abbr.length - 1;
   while (len-- >= 0) {
-    var size = Math.pow(10, len * 3);
+    const size = Math.pow(10, len * 3);
     if (size <= (number + 1)) {
       number = Math.round(number * precision / size) / precision;
       number += ' ' + abbr[len];

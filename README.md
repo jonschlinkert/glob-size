@@ -1,6 +1,8 @@
-# glob-size [![NPM version](https://img.shields.io/npm/v/glob-size.svg?style=flat)](https://www.npmjs.com/package/glob-size) [![NPM monthly downloads](https://img.shields.io/npm/dm/glob-size.svg?style=flat)](https://npmjs.org/package/glob-size)  [![NPM total downloads](https://img.shields.io/npm/dt/glob-size.svg?style=flat)](https://npmjs.org/package/glob-size) [![Linux Build Status](https://img.shields.io/travis/jonschlinkert/glob-size.svg?style=flat&label=Travis)](https://travis-ci.org/jonschlinkert/glob-size)
+# glob-size [![NPM version](https://img.shields.io/npm/v/glob-size.svg?style=flat)](https://www.npmjs.com/package/glob-size) [![NPM monthly downloads](https://img.shields.io/npm/dm/glob-size.svg?style=flat)](https://npmjs.org/package/glob-size) [![NPM total downloads](https://img.shields.io/npm/dt/glob-size.svg?style=flat)](https://npmjs.org/package/glob-size) [![Linux Build Status](https://img.shields.io/travis/jonschlinkert/glob-size.svg?style=flat&label=Travis)](https://travis-ci.org/jonschlinkert/glob-size)
 
 > Get the total size of a glob of files.
+
+Please consider following this project's author, [Jon Schlinkert](https://github.com/jonschlinkert), and consider starring the project to show your :heart: and support.
 
 ## Install
 
@@ -31,26 +33,25 @@ Options:
 ## API usage
 
 ```js
-var size = require('glob-size');
+const size = require('glob-size');
 ```
 
 **Params**
 
-* `patterns` **{String|Array}**
-* `options` **{Object}**
-* `cb` **{Function}**
-* `returns` **{Object}**
+* `patterns` **{string|array}**
+* `options` **{object}**
+* `returns` **{promise}**
 
 **Example**
 
 ```js
 // get the size of all files in the cwd
-size('*', function(err, stats) {
-  console.log(stats);
-});
+size('*')
+  .then(console.log)
+  .catch(console.error)
 ```
 
-### [.sync](index.js#L66)
+### [.sync](index.js#L93)
 
 Synchronously get the size of all files that match the given glob `patterns`.
 
@@ -64,11 +65,11 @@ Synchronously get the size of all files that match the given glob `patterns`.
 
 ```js
 // get the size of all files in the cwd
-var stats = size.sync('*');
+const stats = size.sync('*');
 console.log(stats);
 ```
 
-### [.stats.top](index.js#L87)
+### [.stats.top](index.js#L114)
 
 Returns the top `n` files by size, sorted in ascending order. _(this method is exposed on the returned stats object)_
 
@@ -80,12 +81,12 @@ Returns the top `n` files by size, sorted in ascending order. _(this method is e
 **Example**
 
 ```js
-size('node_modules/**', function(err, stats) {
-  console.log(stats.top(25));
-});
+size('node_modules/**')
+  .then(stats => console.log(stats.top(25)))
+  .catch(console.error);
 ```
 
-### [.stats.tableize](index.js#L124)
+### [.stats.tableize](index.js#L151)
 
 Create a text table from the `stats.files` array returned by the main export, or from the [.top](#top) method. _(this method is exposed on the returned stats object)_
 
@@ -98,64 +99,72 @@ Create a text table from the `stats.files` array returned by the main export, or
 
 ```js
 // tableize the 3 largest files in "node_modules/**"
-size('node_modules/**', function(err, stats) {
-  console.log(stats.table(stats.top(50)));
-});
+size('node_modules/**')
+  .then(stats => console.log(stats.table(stats.top(3))))
+  .catch(console.error);
 
 // tableize all files
-size('node_modules/**', function(err, stats) {
-  console.log(stats.table(stats.files));
-});
+size('node_modules/**')
+  .then(stats => console.log(stats.table(stats.files)))
+  .catch(console.error);
 ```
 
 ## Examples
 
+The following examples assume the code is inside an `async` function.
+
 ```js
 // get the size of all `.js` files in the cwd
-size('*.js', function(err, stats) {
-  console.log(stats);
-});
+console.log(await size('*.js'));
 
 // get the size of all `.js` files in "./foo"
-size('*.js', {cwd: 'foo'}, function(err, stats) {
-  console.log(stats);
-});
+console.log(await size('*.js', { cwd: 'foo' }));
 
 // show the 25 largest files in "node_modules/**"
-size('node_modules/**', function(err, stats) {
-  console.log(stats.top(25));
-});
+const stats = await size('node_modules/**');
+console.log(stats.top(25));
 
 // show the 3 largest files in "node_modules/**"
-size('node_modules/**', function(err, stats) {
-  console.log(stats.top(3));
-});
+const stats = await size('node_modules/**');
+console.log(stats.top(3));
 
 // show the 3 largest files in "node_modules/**"
-size('node_modules/**', function(err, stats) {
-  console.log(stats.top(3));
-});
+const stats = await size('node_modules/**');
+console.log(stats.top(3));
 
 // tableize the 3 largest files in "node_modules/**"
-size('node_modules/**', function(err, stats) {
-  console.log(stats.table(stats.top(50)));
-});
+const stats = await size('node_modules/**');
+console.log(stats.table(stats.top(50)));
 
 // tableize all files
-size('node_modules/**', function(err, stats) {
-  console.log(stats.table(stats.files));
-});
+const stats = await size('node_modules/**');
+console.log(stats.table(stats.files));
 ```
 
 ## About
 
-### Contributing
+<details>
+<summary><strong>Contributing</strong></summary>
 
 Pull requests and stars are always welcome. For bugs and feature requests, [please create an issue](../../issues/new).
 
 Please read the [contributing guide](.github/contributing.md) for advice on opening issues, pull requests, and coding standards.
 
-### Building docs
+</details>
+
+<details>
+<summary><strong>Running Tests</strong></summary>
+
+Running and reviewing unit tests is a great way to get familiarized with a library and its API. You can install dependencies and run tests with the following command:
+
+```sh
+$ npm install && npm test
+```
+
+</details>
+
+<details>
+<summary><strong>Building docs</strong></summary>
 
 _(This project's readme.md is generated by [verb](https://github.com/verbose/verb-generate-readme), please don't edit the readme directly. Any changes to the readme must be made in the [.verb.md](.verb.md) readme template.)_
 
@@ -165,26 +174,21 @@ To generate the readme, run the following command:
 $ npm install -g verbose/verb#dev verb-generate-readme && verb
 ```
 
-### Running tests
-
-Running and reviewing unit tests is a great way to get familiarized with a library and its API. You can install dependencies and run tests with the following command:
-
-```sh
-$ npm install && npm test
-```
+</details>
 
 ### Author
 
 **Jon Schlinkert**
 
-* [github/jonschlinkert](https://github.com/jonschlinkert)
-* [twitter/jonschlinkert](https://twitter.com/jonschlinkert)
+* [LinkedIn Profile](https://linkedin.com/in/jonschlinkert)
+* [GitHub Profile](https://github.com/jonschlinkert)
+* [Twitter Profile](https://twitter.com/jonschlinkert)
 
 ### License
 
-Copyright © 2017, [Jon Schlinkert](https://github.com/jonschlinkert).
+Copyright © 2018, [Jon Schlinkert](https://github.com/jonschlinkert).
 Released under the [MIT License](LICENSE).
 
 ***
 
-_This file was generated by [verb-generate-readme](https://github.com/verbose/verb-generate-readme), v0.4.2, on February 28, 2017._
+_This file was generated by [verb-generate-readme](https://github.com/verbose/verb-generate-readme), v0.6.0, on May 16, 2018._
