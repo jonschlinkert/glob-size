@@ -162,7 +162,7 @@ function tableize(files, cwd) {
     total.bytes += stat.bytes;
   }
 
-  table.push([format(total.bytes), `(${total.files} files)`]);
+  table.push([format(total.bytes), `TOTAL (${total.files} files)`]);
   return text(table, {align: ['r', 'l']});
 }
 

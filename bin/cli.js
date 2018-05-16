@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
 const size = require('..');
+const path = require('path');
 const ok = require('log-ok');
 const util = require('util');
 const assert = require('assert');
 const find = require('find-file-up');
-const pkg = require(find.sync('package.json'));
+const pkgPath = find.sync('package.json');
+const pkg = require(pkgPath);
+const cwd = path.join.bind(path, path.dirname(pkgPath));
 
 const argv = require('yargs')(process.argv.slice(2))
   .option('cwd', {
@@ -37,6 +40,10 @@ let pattern = argv.pattern || (argv._.length ? argv._ : null) || '*';
 if (argv.files) {
   assert(Array.isArray(pkg.files), 'expected package.json files to be an array');
   pattern = pkg.files;
+  pattern.push(cwd('package.json'));
+  pattern.push(cwd('license'));
+  pattern.push(cwd('readme.md'));
+  pattern = pattern.filter((p, i) => pattern.indexOf(p) === i);
 }
 
 size(pattern, argv)
