@@ -25,13 +25,16 @@
     "test": "mocha"
   },
   "dependencies": {
-    "extend-shallow": "^2.0.1",
-    "is-absolute": "^0.2.6",
+    "find-file-up": "^2.0.1",
     "log-ok": "^0.1.1",
-    "matched": "^0.4.4",
-    "resolve-dir": "^1.0.0",
+    "matched": "^2.0.1",
+    "resolve-dir": "^1.0.1",
     "text-table": "^0.2.0",
-    "yargs": "^6.6.0"
+    "yargs": "^11.0.0"
+  },
+  "devDependencies": {
+    "gulp-format-md": "^1.0.0",
+    "mocha": "^5.1.1"
   },
   "keywords": [
     "file",
@@ -41,10 +44,6 @@
     "size",
     "stat"
   ],
-  "devDependencies": {
-    "gulp-format-md": "^0.1.11",
-    "mocha": "^3.2.0"
-  },
   "verb": {
     "toc": false,
     "layout": "default",
